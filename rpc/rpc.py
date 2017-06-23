@@ -6,6 +6,7 @@ from rpc.message import Message
 
 class LamportListenerThread(Thread):
     def __init__(self, lamport_mutex, port):
+
         def task():
             sock = socket.socket()
             sock.bind(("", port))
@@ -14,7 +15,8 @@ class LamportListenerThread(Thread):
                 conn, addr = sock.accept()
                 length = int.from_bytes(conn.recv(4), 'big')
                 msg = Message.from_data(conn.recv(length))
-                lamport_mutex.deliver_message(msg)
+                lamport_mutex.receive(msg)
+
         super().__init__(target=task)
 
 
@@ -31,7 +33,7 @@ class LocalRPC(object):
         pass
 
     def send_message(self, msg):
-        self.table[msg.to].mutex.deliver_message(msg)
+        self.table[msg.to].mutex.receive(msg)
 
     @property
     def pid(self):

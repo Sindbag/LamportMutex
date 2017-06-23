@@ -43,7 +43,7 @@ class Node(object):
                 input("Acquire")
 
             self.log_local('request')
-            while not self.mutex.request_crit_section():
+            while not self.mutex.acquire():
                 self.log_local('request')
                 time.sleep(random.uniform(1, 5))
 
@@ -56,5 +56,5 @@ class Node(object):
             if manual:
                 input('Release')
 
-            self.mutex.release_request()
+            self.mutex.release()
             self.log_local('release')

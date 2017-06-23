@@ -13,7 +13,7 @@ class LamportListenerThread(Thread):
             while True:
                 conn, addr = sock.accept()
                 length = int.from_bytes(conn.recv(4), 'big')
-                msg = Message(conn.recv(length))
+                msg = Message.from_data(conn.recv(length))
                 lamport_mutex.deliver_message(msg)
         super().__init__(target=task)
 

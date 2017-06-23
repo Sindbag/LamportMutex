@@ -1,7 +1,8 @@
 import argparse
 import glob
 import os
-import threading
+# from multiprocessing import Process as T
+from threading import Thread as T
 
 import time
 
@@ -21,20 +22,22 @@ if __name__ == "__main__":
 
     if args.m:
         n = Node(args.p, args.config)
-        t = threading.Thread(target=n.run, args=(True, ))
+        t = T(target=n.run, args=(True, ))
         time.sleep(1)
         t.start()
         t.join()
     else:
-        threads = []
+        procs = []
         for i in range(args.n):
             n = Node(i, args.config)
-            t = threading.Thread(target=n.run)
-            threads.append(t)
+            t = T(target=n.run)
+            procs.append(t)
 
         time.sleep(1)
-        for t in threads:
+        print('To stop press Ctrl+C.')
+        for i, t in enumerate(procs):
+            print('Starting %i proc' % i)
             t.start()
 
-        for t in threads:
+        for t in procs:
             t.join()

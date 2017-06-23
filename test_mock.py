@@ -16,8 +16,8 @@ class LamportTestCase(unittest.TestCase):
         rpc = LocalRPC(n, table)
         mutex = LamportMutex(rpc)
 
-        self.assertTrue(mutex.request_crit_section())
-        mutex.release_request()
+        self.assertTrue(mutex.acquire())
+        mutex.release()
 
     def test_multi(self):
         n1, n2  = MockNode(0), MockNode(0)
@@ -25,8 +25,8 @@ class LamportTestCase(unittest.TestCase):
         rpc1, rpc2 = LocalRPC(n1, table), LocalRPC(n2, table)
         mutex1, mutex2 = LamportMutex(rpc1), LamportMutex(rpc2)
 
-        self.assertTrue(mutex1.request_crit_section())
-        mutex1.release_request()
+        self.assertTrue(mutex1.acquire())
+        mutex1.release()
 
-        self.assertTrue(mutex2.request_crit_section())
-        mutex2.release_request()
+        self.assertTrue(mutex2.acquire())
+        mutex2.release()

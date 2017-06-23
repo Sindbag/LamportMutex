@@ -1,4 +1,5 @@
 from rpc.message import Message
+from asyncio import Lock
 
 
 class LogicalTime(object):
@@ -15,75 +16,76 @@ class LogicalTime(object):
 class LamportMutex(object):
     def __init__(self, rpc):
         self.rpc = rpc
-        self.requestList = []
+        self.requests = []
         self.request_made = False
         self.pending_replies = []
         self.localtime = LogicalTime()
+        self.lock = Lock()
 
-    def deliver_message(self, msg):
+    def receive(self, msg):
         self.localtime.remote_event(msg.time)
 
         if msg.type == Message.REQUEST:
             self._send_message(msg.from_, Message.REPLY)
 
         elif msg.type == Message.RELEASE:
-            self._release_request(msg)
+            self._release(msg)
 
         elif msg.type == Message.REPLY:
-            self._reply_request(msg)
+            self._reply(msg)
 
-    def release_request(self):
-        self._release_request()
-        self._multicast(Message.RELEASE)
-
-    def request_crit_section(self):
+    def acquire(self):
         if not self.request_made:
             self.request_made = True
             self.pending_replies = self.rpc.other_pids[:]
             self._multicast(Message.REQUEST)
 
-        if self.requestList and self.requestList[0].from_ == self.rpc.pid:
+        if self.requests and self.requests[0].from_ == self.rpc.pid:
             if len(self.pending_replies) == 0:
                 return True
 
         return False
 
-    def _release_request(self, msg=None):
+    def release(self):
+        self._release()
+        self._multicast(Message.RELEASE)
+
+    def _release(self, msg=None):
         if msg is None:
             self.request_made = False
-            self.requestList = self.requestList[1:]
+            self.requests.pop(0)
             return
 
-        if self.requestList and self.requestList[0].from_ == msg.from_:
-            self.requestList = self.requestList[1:]
+        if self.requests and self.requests[0].from_ == msg.from_:
+            self.requests.pop(0)
 
-    def _reply_request(self, msg=None):
+    def _reply(self, msg=None):
         if self.request_made:
-            self.pending_replies.pop()
+            self.pending_replies.pop(0)
 
-    def _queue_request(self, msg):
-        self.requestList.append(msg)
-        self.requestList.sort()
+    def _queue_extend(self, msg):
+        self.requests.append(msg)
+        self.requests.sort()
 
-    def _send_message(self, receiver, type):
-        if type == Message.REPLY:
+    def _send_message(self, receiver, _type):
+        if _type == Message.REPLY:
             self.localtime.local_event()
 
         msg = Message(to=receiver,
                       from_=self.rpc.pid,
                       time=self.localtime.time,
-                      type=type)
+                      type=_type)
 
-        if receiver == self.rpc.pid and type == Message.REQUEST:
-            self._queue_request(msg)
+        if receiver == self.rpc.pid and _type == Message.REQUEST:
+            self._queue_extend(msg)
         else:
             self.rpc.send_message(msg)
 
-    def _multicast(self, type):
+    def _multicast(self, _type):
         self.localtime.local_event()
 
-        if type == Message.REQUEST:
-            self._send_message(self.rpc.pid,  type)
+        if _type == Message.REQUEST:
+            self._send_message(self.rpc.pid,  _type)
 
         for pid in self.rpc.other_pids:
-            self._send_message(pid, type)
+            self._send_message(pid, _type)

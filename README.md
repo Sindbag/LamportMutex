@@ -15,6 +15,7 @@ To run stress-test for 10 processes:
 python run.py stress.conf
 ```
 Results of stress-test are placed in logs/*.txt. N.txt is for each node and common.txt - one for all.
+
 <span style="color: #ee1111">Don't forget to create 'logs' directory!</span>
 
 ### Manual mode

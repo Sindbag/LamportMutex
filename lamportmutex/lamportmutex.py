@@ -1,5 +1,4 @@
 from rpc.message import Message
-from asyncio import Lock
 
 
 class LogicalTime(object):
@@ -18,14 +17,14 @@ class LamportMutex(object):
         self.rpc = rpc
         self.requests = []
         self.request_made = False
-        self.pending_replies = []
+        self.pending_replies = set()
         self.localtime = LogicalTime()
-        self.lock = Lock()
 
     def receive(self, msg):
         self.localtime.remote_event(msg.time)
 
         if msg.type == Message.REQUEST:
+            self._queue_extend(msg)
             self._send_message(msg.from_, Message.REPLY)
 
         elif msg.type == Message.RELEASE:
@@ -36,8 +35,8 @@ class LamportMutex(object):
 
     def acquire(self):
         if not self.request_made:
+            self.pending_replies = {i for i in self.rpc.other_pids[:]}
             self.request_made = True
-            self.pending_replies = self.rpc.other_pids[:]
             self._multicast(Message.REQUEST)
 
         if self.requests and self.requests[0].from_ == self.rpc.pid:
@@ -56,12 +55,18 @@ class LamportMutex(object):
             self.requests.pop(0)
             return
 
-        if self.requests and self.requests[0].from_ == msg.from_:
-            self.requests.pop(0)
+        if self.requests:
+            for i, req in enumerate(self.requests):
+                if req.from_ == msg.from_:
+                    self.requests.pop(i)
+                    break
+            else:
+                raise Exception('Trying to pop wrong request: %s in %s' %
+                                (self.requests[0].from_, self.rpc.pid))
 
     def _reply(self, msg=None):
         if self.request_made:
-            self.pending_replies.pop(0)
+            self.pending_replies.remove(msg.from_)
 
     def _queue_extend(self, msg):
         self.requests.append(msg)

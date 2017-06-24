@@ -2,9 +2,9 @@ import json
 
 
 class Message:
-    REQUEST = 't'
-    RELEASE = 'e'
-    REPLY = 'y'
+    REQUEST = 'l'
+    RELEASE = 'u'
+    REPLY = 'a'
 
     def __init__(self, type=None, from_=None, to=None, time=None):
         self.from_ = from_

@@ -1,8 +1,9 @@
 import argparse
 import glob
 import os
-# from multiprocessing import Process as T
-from threading import Thread as T
+
+from multiprocessing import Process as T
+from threading import Thread
 
 import time
 
@@ -28,9 +29,13 @@ if __name__ == "__main__":
         t.join()
     else:
         procs = []
+
+        def callsome(i):
+            n = Node(i, args.config, 10)
+            n.run()
+
         for i in range(args.n):
-            n = Node(i, args.config)
-            t = T(target=n.run)
+            t = T(target=callsome, args=(i,))
             procs.append(t)
 
         time.sleep(1)

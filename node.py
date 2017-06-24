@@ -16,8 +16,9 @@ def router_table(file):
 
 
 class Node(object):
-    def __init__(self, pid, configpath):
+    def __init__(self, pid, configpath, times=None):
         self.pid = pid
+        self.times = times
         self.rpc = NetworkRPC(self, router_table(configpath))
         self.mutex = LamportMutex(self.rpc)
         self.rpc.run_listener()
@@ -38,6 +39,7 @@ class Node(object):
             f.write("%s %.5f %5d %d\n" % (action, time.time(), self.mutex.localtime.time, self.pid))
 
     def run(self, manual=False):
+        time.sleep(5)
         while True:
             if manual:
                 input("Acquire")
@@ -58,3 +60,8 @@ class Node(object):
 
             self.mutex.release()
             self.log_local('release')
+
+            if self.times is not None:
+                self.times -= 1
+                if self.times <= 0:
+                    break

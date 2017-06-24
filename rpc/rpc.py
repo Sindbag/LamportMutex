@@ -6,18 +6,19 @@ from rpc.message import Message
 
 class LamportListenerThread(Thread):
     def __init__(self, lamport_mutex, port):
+        self.mutex = lamport_mutex
+        self.port = port
+        super().__init__(target=self.task)
 
-        def task():
-            sock = socket.socket()
-            sock.bind(("", port))
-            sock.listen(20)
-            while True:
-                conn, addr = sock.accept()
-                length = int.from_bytes(conn.recv(4), 'big')
-                msg = Message.from_data(conn.recv(length))
-                lamport_mutex.receive(msg)
-
-        super().__init__(target=task)
+    def task(self):
+        sock = socket.socket()
+        sock.bind(("", self.port))
+        sock.listen(20)
+        while True:
+            conn, addr = sock.accept()
+            length = int.from_bytes(conn.recv(4), 'big')
+            msg = Message.from_data(conn.recv(length))
+            self.mutex.receive(msg)
 
 
 class LocalRPC(object):
@@ -58,5 +59,8 @@ class NetworkRPC(LocalRPC):
             sock.send(data)
         except ConnectionRefusedError as e:
             print(e)
+        except Exception as e:
+            print(e)
+            raise
         finally:
             sock.close()

@@ -65,3 +65,5 @@ class Node(object):
                 self.times -= 1
                 if self.times <= 0:
                     break
+        time.sleep(10)
+        self.mutex.rpc.listener.join()

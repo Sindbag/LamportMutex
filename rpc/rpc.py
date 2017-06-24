@@ -45,10 +45,11 @@ class NetworkRPC(LocalRPC):
     def __init__(self, node_reference, table):
         super().__init__(node_reference, table)
         self.port = table[self.pid][1]
+        self.listener = None
 
     def run_listener(self):
-        listener = LamportListenerThread(self.node_reference.mutex, self.port)
-        listener.start()
+        self.listener = LamportListenerThread(self.node_reference.mutex, self.port)
+        self.listener.start()
 
     def send_message(self, msg):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

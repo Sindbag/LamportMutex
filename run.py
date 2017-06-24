@@ -31,7 +31,7 @@ if __name__ == "__main__":
         procs = []
 
         def callsome(i):
-            n = Node(i, args.config, 10)
+            n = Node(i, args.config, None)
             n.run()
 
         for i in range(args.n):
